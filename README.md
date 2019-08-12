@@ -1,8 +1,8 @@
 Screen_Reader
 
-Author: Donovan Loperena\n
-Email: dmloperena@brightsign.biz\n
-Last Modified: Aug 12 2019 11:09AM\n
+Author: Donovan Loperena<br/>
+Email: dmloperena@brightsign.biz<br/>
+Last Modified: Aug 12 2019 11:09AM<br/>
 
 
 ********************* Technologies Used ********************
