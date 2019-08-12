@@ -1,11 +1,11 @@
 Screen_Reader
 
-Author: Donovan Loperena
-Email: dmloperena@brightsign.biz
-Last Modified: Aug 12 2019 11:09AM
+Author: Donovan Loperena\n
+Email: dmloperena@brightsign.biz\n
+Last Modified: Aug 12 2019 11:09AM\n
 
 
-*********************Technologies Used********************
+********************* Technologies Used ********************
 
 - BrightScript ( autorun.brs )
 - libcurl-dev
