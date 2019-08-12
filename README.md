@@ -5,7 +5,7 @@ Email: dmloperena@brightsign.biz<br/>
 Last Modified: Aug 12 2019 11:09AM<br/>
 
 
-*********************Technologies Used********************
+******************** Technologies Used ********************
 
 - BrightScript ( autorun.brs )
 - libcurl-dev
@@ -18,7 +18,7 @@ Compilation:
 
 Move to the directory where both files are located ( both files must be in the same directory).
 
-Once in the directory run `g++ main2.cpp -o main -lcurl -lpthread `pkg-config --cflags --libs opencv``
+Once in the directory run `g++ main2.cpp -o main -lcurl -lpthread ``pkg-config --cflags --libs opencv``
 
 Usage:
 
