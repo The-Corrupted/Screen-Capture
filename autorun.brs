@@ -11,7 +11,7 @@ Function Main() as Void
 	' Check registry for boot count and if it does not exist, make it
 	registry = CreateObject("roRegistrySection", "counter")
 	if not registry.Exists("boot_count") then
-		registry.Write("boot_count", "0")
+		registry.Write("boot_count", "1")
 	end if
 	m.itersStr = registry.Read("boot_count")
 	m.iters = strtoi(m.itersStr)

@@ -8,12 +8,27 @@
 #include <memory>
 #include <stdexcept>
 
-bool writeFile(std::string filename, int hdmiDisplayCount) {
-	std::ofstream file (filename, std::ios::app);
-	file << "*************** HDMI Display Detected. ***************\n\n";
-	file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
-	file.close();
-	return true;
+bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
+	if ( status == "PASS" ) {
+		std::ofstream file (filename, std::ios::app);
+		file << "*************** HDMI Display Detected. ***************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		file.close();
+		return true;
+	} else if ( status == "FAIL" ) {
+		std::ofstream file(filename, std::ios::app);
+		file << "*************** FAIL: HDMI Did Not Display ****************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		file.close();
+		return true;
+	} else {
+		std::ofstream file(filename, std::ios::app);
+		file << "***************  MISCFAIL: Nothing worked  ****************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		return true;
+	}
+	std::cout<<"Something went wrong."<<std::endl;
+	return false;
 }
 
 
@@ -173,7 +188,9 @@ int main(int argc, char *argv[]) {
 	cv::Mat edges;
 	cv::Mat Frame;
 	std::shared_ptr<ServerReader> sr = std::make_shared<ServerReader>();
-	std::thread t(checkpage, http_addr, sr);
+	std::shared_ptr<Signaler> sig = std::make_shared<Signaler>();
+
+	std::thread t(checkpage, http_addr, sr, sig);
 	while(cv::waitKey(1) != 27) {
 		Frame = GetFrame(&cap);
 		cv::Vec3b color = ModVideo(&Frame);
@@ -182,22 +199,28 @@ int main(int argc, char *argv[]) {
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
+			hdmiDisplayCount += 1;
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
-				hdmiDisplayCount += 1;
-				writeFile(filename, hdmiDisplayCount);
+				writeFile("PASS", filename, hdmiDisplayCount);
 			} else if ( colorFound != true && src->edid_found ) {
 				std::cout << colorFound <<  " " << src->edid_found << std::endl;
 				std::cout<<"Color not found but server reported the device has an hdmi signal."<<std::endl;
-				// suspectedReboot = false;
+				writeFile("FAIL", filename, hdmiDisplayCount);
 			} else {
 				std::cout<<colorFound << " " << src->edid_found << std::endl;
 				std::cout<<"Something went wrong."<<std::endl;
+				writeFile("MISCFAIL", filename, hdmiDisplayCount);
 			}
 			src->mu.unlock();
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 	}
+
+	Signaler* sig_ptr = sig.get();
+	sig->mu.lock();
+	sig->quit = true;
+	sig->mu.unlock();
 	t.join();
 	return 0;
 }

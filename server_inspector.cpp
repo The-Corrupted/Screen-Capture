@@ -10,6 +10,12 @@
 struct ServerReader {
 	bool OK_FLAG;
 	bool edid_found;
+	bool quit;
+	std::mutex mu;
+};
+
+struct Signaler {
+	bool quit;
 	std::mutex mu;
 };
 
@@ -18,12 +24,12 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::stri
 	return size * nmemb;
 }
 
-std::vector<std::string> checkpage(std::string http_addr, std::shared_ptr<ServerReader> sr) {
+void checkpage(std::string http_addr, std::shared_ptr<ServerReader> sr, std::shared_ptr<Signaler> sig) {
 	CURL *curl;
 	CURLcode res;
 	std::string readBuffer;
-
-	for (; ;) {
+	Signaler* sig_ptr = sig.get();
+	while (sig->quit != true ) {
 		curl = curl_easy_init();
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, http_addr.c_str());

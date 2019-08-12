@@ -1,11 +1,11 @@
 Screen_Reader
 
-Author: Donovan Loperena<br/>
-Email: dmloperena@brightsign.biz<br/>
-Last Modified: Aug 12 2019 11:09AM<br/>
+Author: Donovan Loperena
+Email: dmloperena@brightsign.biz
+Last Modified: Aug 12 2019 11:09AM
 
 
-********************* Technologies Used ********************
+*********************Technologies Used********************
 
 - BrightScript ( autorun.brs )
 - libcurl-dev
@@ -18,7 +18,7 @@ Compilation:
 
 Move to the directory where both files are located ( both files must be in the same directory).
 
-Once in the directory run `g++ main2.cpp -o main -lcurl -lpthread pkg-config --cflags --libs opencv`
+Once in the directory run g++ main2.cpp -o main -lcurl -lpthread `pkg-config --cflags --libs opencv`
 
 Usage:
 
@@ -34,9 +34,11 @@ Align the purple arrow to one of the edge of the screen and make sure that the e
 
 Once the camera is setup, insert the autorun into the device and let the program run for as long as you need to.
 
+When you are ready to quit, click ESC.
+
 Results:
 
-Results will be stored in edid.txt on the devices sd as well as log.txt on the computer running this program. To check that everything ran well, scroll to the end of both files. The iteration count should be logtext+1 = edidtext ( Log text should be one iter higher than edid as edid starts iterating at 0 whereas logtext begins iterating at 1).
+Results will be stored in edid.txt on the devices sd as well as log.txt on the computer running this program. To check that everything ran well, open log.txt and do a search for FAIL and MISCFAIL. If FAIL appears, that means the device detected edid but the camera didn't detect that the screen had turned on. MISCFAIL shows up when the device does not detect hdmi and the camera does or doesn't detect the screen.
 
 Resetting:
 
