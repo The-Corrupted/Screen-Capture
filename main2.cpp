@@ -117,14 +117,11 @@ cv::Vec3b ModVideo(cv::Mat *frame) {
 }
 
 int main(int argc, char *argv[]) {
-	const int CON_FAIL_MAX = 10;
 	int r_range[2] = {130, 255};
 	int g_range[2] = {159, 255};
 	int b_range[2] = {175, 255};
 	const std::string filename = "log.txt";
-	uint8_t consecutive_false = 0;
 	bool colorFound = false;
-	bool suspectedReboot = true;
 	uint32_t hdmiDisplayCount = 0;
 	std::string ip = "";
 	std::string cam_port = "0";
