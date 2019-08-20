@@ -1,5 +1,4 @@
 ' HDMI Checker Script
-' Author: Nameless_Flamingo
 
 Function Main() as Void
 	PRINT "Starting..."
@@ -53,11 +52,9 @@ Function Main() as Void
 			PrintDisplay("Found HDMI. Edid Written to file.")
 			m.edidFound = "true"
 			SetupServer()
-			'RebootSystem()
 		end if
 	end if
 
-	waitForHDMI:
 	while true
 		msg = wait(0, m.msgPort)
 		if type(msg) = "roHdmiOutputChanged" then
@@ -89,7 +86,6 @@ Function Main() as Void
 			registry.Flush()
 			PrintDisplay("Found HDMI. Edid Written to file.")
 			m.edidFound = "true"
-			'RebootSystem()
 		else if type(msg) = "roHttpEvent" then
 			PRINT "Got Http Event"
 			method = msg.GetMethod()
@@ -109,7 +105,6 @@ Function Main() as Void
 			fileAppend.SendLine("FAILURE: Failed to find hdmi.")
 			fileAppend.Flush()
 			PrintDisplay("Failed to find HDMI connection in a timely manner.")
-			'RebootSystem()
 		end if
 	end while
 End Function
