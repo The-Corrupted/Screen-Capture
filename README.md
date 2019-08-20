@@ -22,27 +22,29 @@ Once in the directory run ``g++ main2.cpp -o main -lcurl -lpthread `pkg-config -
 
 Usage:
 
-In order to run this, you must connect the device your scanning and the computer running this program to the same network and you must be able to access the devices IP.
+In order to run this, you must connect the device you're scanning and the computer running this program to the same network and you must be able to access the device's IP.
 
-Once the initial setup is started, run
+After the initial setup, run
 ./main --ip <device_ip> --cam <cam_port> 
 e.x. ./main --ip 10.0.200.160 --cam 0
 
+( Notice: This program uses c++17 features. As such, please either alias g++ --std=c++17 or set it manually when you go to compile ).
+
 Once the program starts a live feed should be displayed on your screen with a small purple half-square in the bottom left corner.
 
-Align the purple arrow to one of the edge of the screen and make sure that the edge of the purple arrow does not land on any bright reflections ( i.e. light, any white surfaces. These will be picked up by the camera and the color checker will misinterpret this as the screen being on).
+Align the purple arrow to one of the corners of the screen and make sure that the edge of the purple arrow does not land on any bright reflections ( These will be picked up by the camera and the color checker will misinterpret it as the screen being on).
 
-Once the camera is setup, insert the autorun into the device and let the program run for as long as you need to.
+Once the camera is setup, insert the autorun into the device and let the program run for as long as you need it to.
 
 When you are ready to quit, click ESC.
 
 Results:
 
-Results will be stored in edid.txt on the devices sd as well as log.txt on the computer running this program. To check that everything ran well, open log.txt and do a search for FAIL and MISCFAIL. If FAIL appears, that means the device detected edid but the camera didn't detect that the screen had turned on. MISCFAIL shows up when the device does not detect hdmi and the camera does or doesn't detect the screen.
+Results will be stored in edid.txt on the device's sd as well as log.txt on the computer running this program. To check that everything ran well, open log.txt and do a search for FAIL and MISCFAIL. If FAIL appears, that means the device detected edid but the camera didn't detect that the screen had turned on. MISCFAIL shows up when the device does not detect hdmi and the camera does or doesn't detect the screen.
 
 Resetting:
 
-When your ready to start a new test/clean your environment; use serial to connect to your device and make sure you remove the registry of previous runs via registry delete counter. This should reset the devices iteration count.
+When you're ready to start a new test/clean your environment; use serial to connect to your device and make sure you remove the registry of previous runs via registry delete counter. This should reset the devices iteration count.
 
 Delete edid from the devices storage and remove log.txt.
 
