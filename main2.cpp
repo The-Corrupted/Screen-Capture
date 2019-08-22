@@ -117,11 +117,14 @@ cv::Vec3b ModVideo(cv::Mat *frame) {
 }
 
 int main(int argc, char *argv[]) {
+	const int CON_FAIL_MAX = 10;
 	int r_range[2] = {130, 255};
 	int g_range[2] = {159, 255};
 	int b_range[2] = {175, 255};
 	const std::string filename = "log.txt";
+	uint8_t consecutive_false = 0;
 	bool colorFound = false;
+	bool suspectedReboot = true;
 	uint32_t hdmiDisplayCount = 0;
 	std::string ip = "";
 	std::string cam_port = "0";
@@ -203,10 +206,22 @@ int main(int argc, char *argv[]) {
 			} else if ( colorFound != true && src->edid_found ) {
 				std::cout << colorFound <<  " " << src->edid_found << std::endl;
 				std::cout<<"Color not found but server reported the device has an hdmi signal."<<std::endl;
+				const std::string iterCountStr = std::to_string(hdmiDisplayCount);
+				std::string imageName = "FImg"+iterCountStr+".png";
+				bool result = cv::imwrite(imageName, Frame);
+				if (!result) {
+					std::cout<<"Failed to save the failing frame."<<std::endl;
+				}
 				writeFile("FAIL", filename, hdmiDisplayCount);
 			} else {
 				std::cout<<colorFound << " " << src->edid_found << std::endl;
 				std::cout<<"Something went wrong."<<std::endl;
+				const std::string iterCountStr = std::to_string(hdmiDisplayCount);
+				std::string imageName = "FImg"+iterCountStr+".png";
+				bool result = cv::imwrite(imageName, Frame);
+				if (!result) {
+					std::cout<<"Failed to save the failing frame."<<std::endl;
+				}
 				writeFile("MISCFAIL", filename, hdmiDisplayCount);
 			}
 			src->mu.unlock();
