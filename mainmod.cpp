@@ -38,6 +38,7 @@ bool checkColorYDecrement(int row, int col, cv::Mat Frame);
 
 
 // -----------------------------------------------------Results Logging Function-----------------------------------------
+
 bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
 	if ( status == "PASS" ) {
 		std::ofstream file (filename, std::ios::app);
@@ -106,14 +107,6 @@ bool parseIP(std::string ip) {
 	return true;
 }
 
-// -------------------------------------- OpenCV Helper Functions----------------------------------------------
-
-bool isInRange(cv::Mat *frame, int low_H, int high_H, int low_S, int high_S, int low_v, int high_v) {
-	return false;
-}
-
-// -------------------------------------- Trackbar Functions --------------------------------------------------
-
 static void on_low_h_thresh_trackbar(int, void *) {
 	low_H = cv::min(high_H-1, low_H);
 	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
@@ -154,22 +147,11 @@ cv::Mat GetFrame(cv::VideoCapture *cap) {
 
 // ------------------------------------Draw to Frame/Extracts Color Vector/Converts Color Space to BGR2BGRA----------------------------------------
 
-/*cv::Vec3b*/ void ModVideo(cv::Mat *Frame, cv::Mat *Objframe) {
-	int point_x = Frame->rows/4;
-	int point_y = Frame->cols/2;
-	static cv::Vec3b new_color(153,102,204);
+void ShowVideo(cv::Mat *Frame, cv::Mat *Objframe) {
 	static cv::Mat edges;
-	cv::Vec3b color = Frame->at<cv::Vec3b>(cv::Point(point_x, point_y));
-	for(int x=0;x<20;++x) {
-		Frame->at<cv::Vec3b>(cv::Point(point_x+x, point_y)) = new_color;
-		for(int y=0;y<20;++y) {
-			Frame->at<cv::Vec3b>(cv::Point(point_x, point_y+y)) = new_color;
-		}
-	}
 	cv::cvtColor(*Frame, edges, cv::COLOR_BGR2BGRA);
 	cv::imshow(LIVEFEEDWINDOW, *Frame);
 	cv::imshow(OBJECTDETECTIONWINDOW, *Objframe);
-	// return color;
 }
 
 // -----------------------------------------------------Main Program------------------------------------------
@@ -261,11 +243,9 @@ int main(int argc, char *argv[]) {
 		// Get threshold frame
 		cv::inRange(Frame_HSV, cv::Scalar(low_H, low_S, low_V), cv::Scalar(high_H, high_S, high_V), Frame_Threshold);
 		// Display Original && Obj Frame Frame
-		ModVideo(&Frame, &Frame_Threshold);
+		ShowVideo(&Frame, &Frame_Threshold);
 		// colorFound = isInRange(r_range, g_range, b_range, color);
 		ServerReader* src = sr.get();
-		// ------------------------- Start Threaded Image Read ----------------------------
-		// ------------------------ End Threaded Image Read -------------------------------
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
@@ -339,7 +319,6 @@ int main(int argc, char *argv[]) {
 }
 
 bool checkColorXDecrement(int row, int col, cv::Mat Frame) {
-	std::cout << "X ROW: " << row << "X COL: "<<col<<std::endl;
 	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
 	int colorCode = color[0] * 3;
 	if ( colorCode == 765 ) {
@@ -349,7 +328,6 @@ bool checkColorXDecrement(int row, int col, cv::Mat Frame) {
 }
 
 bool checkColorYDecrement(int row, int col, cv::Mat Frame) {
-	std::cout << "Y ROW: " << row << "Y COL: "<<col<<std::endl;
 	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
 	int colorCode = color[0] * 3;
 	if ( colorCode == 765 ) {
