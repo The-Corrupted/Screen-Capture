@@ -30,11 +30,9 @@ e.x. ./main --ip 10.0.200.160 --cam 0
 
 ( Notice: This program uses c++17 features. As such, please either alias g++ --std=c++17 or set it manually when you go to compile ).
 
-Once the program starts a live feed should be displayed on your screen with a small purple half-square in the bottom left corner.
+Once the program has started, two feeds should display on screen. One will display the raw video stream, and the other displays the red color checker feed with adjuster slides ( mostly used for testing ).
 
-Align the purple arrow to one of the corners of the screen and make sure that the edge of the purple arrow does not land on any bright reflections ( These will be picked up by the camera and the color checker will misinterpret it as the screen being on).
-
-Once the camera is setup, insert the autorun into the device and let the program run for as long as you need it to.
+Setup the camera so that a majority of the feed is taken up by the screen you are inspecting. After you have setup the camera in a semi-permanent and isolated area you may insert the autorun, at which point the test will begin and you can leave it to run for as long as you need.
 
 When you are ready to quit, click ESC.
 
@@ -53,14 +51,10 @@ Your environment should now be clean and ready for retesting.
 ********************* Technical Notes ********************
 
 
-This program starts a capture on the specified camera port and will read the color value from the pixel located at the intersection of the purple half-square (before it is edited of course). The frame will be passed to ModImage where it is displayed on a qtwidget created through opencv.
-
-In tandem to this ( in its own seperate thread to prevent blocking ) a curl instance is started using the specified ip and a shared_ptr of type ServerReader.
+This program starts a capture on the specified camera port and will read a filtered frame when the device is able to make contact with the test device via a threaded instance of curl that communicates back to main via a shared_ptr to the struct ServerReader.
 
 ServerReader is used to synchronize communications between the main thread and the threaded curl function. When curl is able to make a connection, ServerReader*->OK_FLAG will be set to true and the body is checked and returned as a true/false value in ServerReader*->edid_found.
 
 On the main thread, ServerReader will trigger an if statement that triggers a color check of the most recent frame capture. Once the check is done, the value of OK_FLAG is set back to false and the main thread will wait until another connection is made.
 
-The color is checked as an rgb value with a fault tolerance of r{130, 255}, g{159,255}, b{175, 255}. This helps to deal with unusual lighting and differences between screens. However it may be necessary to further adjust the tolerance if you find a lot of failures where there shouldn't be any.
-
-  
+The color is checked via black and white pixel values and ultimately. If the number of white pixels ( the color red ) divided by the number of black pixels ( another color ) is greater than or equal to 1, then it is assumed that the screen came on. If it is less than one, it is assumed that the screen is either off; or is seeing some very severe distortion.  
