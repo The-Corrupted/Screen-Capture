@@ -23,8 +23,8 @@ public:
 	~ImageData();
 };
 
-bool checkColorXDecrement(int row, int col, int posInc, cv::Mat Frame);
-bool checkColorYDecrement(int row, int col, int posInc, cv::Mat Frame);
+bool checkColorXDecrement(int row, int col, cv::Mat Frame);
+bool checkColorYDecrement(int row, int col, cv::Mat Frame);
 
 // ---------------------------------- Some globals for HSV Colorizer and Adjuster Widget -----------------------------------------------
 
@@ -264,30 +264,38 @@ int main(int argc, char *argv[]) {
 		ModVideo(&Frame, &Frame_Threshold);
 		// colorFound = isInRange(r_range, g_range, b_range, color);
 		ServerReader* src = sr.get();
-		ImageData imagedata;
-		int rows = Frame_Threshold.rows;
-		int cols = Frame_Threshold.cols;
 		// ------------------------- Start Threaded Image Read ----------------------------
-		std::cout<<imagedata.doGetWhite()<< " " << imagedata.doGetOther();
 		// ------------------------ End Threaded Image Read -------------------------------
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
 			hdmiDisplayCount += 1;
-			for ( int x = rows; x > 0; --x ) {
-				for ( int x = rows; x > 0; --x ) {
-					bool isRed = checkColorXDecrement(rows, cols, x, Frame_Threshold);
-					if ( isRed ) imagedata.incrementWhite();
-					else imagedata.incrementOther();
-					for ( int y = cols; y > 0; --y ) {
-						isRed = checkColorYDecrement(rows, cols, y, Frame_Threshold);
-						if ( isRed ) imagedata.incrementWhite();
-						else imagedata.incrementOther();
+			ImageData imagedata;
+			int rows = Frame_Threshold.rows;
+			int cols = Frame_Threshold.cols;
+			int x = 1;
+			std::cout<<"Cols: "<<cols << " " << "Rows: " << rows << std::endl; 
+			for ( x; x < rows+1; ++x ) {
+				int y = 1;
+				bool isRed = checkColorXDecrement(x, y, Frame_Threshold);
+				if ( isRed ) {
+					imagedata.incrementWhite();
+				} else {
+					imagedata.incrementOther();
+				}
+				for ( y; y < cols; ++y ) {
+					isRed = checkColorYDecrement(x, y, Frame_Threshold);
+					if ( isRed ) {
+						imagedata.incrementWhite();
+					} else {
+						imagedata.incrementOther();
 					}
 				}
 			}
-			int mean = imagedata.doGetMean();
-			if mean
+			std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
+			int dec = imagedata.doGetDec();
+			std::cout<< "DEC: " << dec << std::endl;
+			std::cout<<"DEC: " << dec << std::endl;			
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
@@ -325,8 +333,9 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-bool checkColorXDecrement(int row, int col, int posInc, cv::Mat Frame) {
-	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row+posInc, col));
+bool checkColorXDecrement(int row, int col, cv::Mat Frame) {
+	std::cout << "X ROW: " << row << "X COL: "<<col<<std::endl;
+	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
 	int colorCode = color[0] * 3;
 	if ( colorCode == 765 ) {
 		return true;
@@ -334,8 +343,9 @@ bool checkColorXDecrement(int row, int col, int posInc, cv::Mat Frame) {
 	return false;
 }
 
-bool checkColorYDecrement(int row, int col, int posInc, cv::Mat Frame) {
-	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col+posInc));
+bool checkColorYDecrement(int row, int col, cv::Mat Frame) {
+	std::cout << "Y ROW: " << row << "Y COL: "<<col<<std::endl;
+	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
 	int colorCode = color[0] * 3;
 	if ( colorCode == 765 ) {
 		return true;
