@@ -8,6 +8,34 @@
 #include <memory>
 #include <stdexcept>
 
+class ImageData {
+private:
+	int white = 0;
+	int other = 0;
+public:
+	int doGetDec();
+	int doGetWhite();
+	int doGetOther();
+	void incrementWhite();
+	void incrementOther();
+	~ImageData();
+};
+
+bool checkColor(int row, int col, cv::Mat Frame);
+
+// ---------------------------------- Some globals for HSV Colorizer and Adjuster Widget -----------------------------------------------
+
+	std::string LIVEFEEDWINDOW = "Live feed";
+	std::string OBJECTDETECTIONWINDOW = "Objects Detected";
+	// Finding 
+	const int MAX_C_VAL = 255;
+	const int H_MAX = 10;
+	int low_H = 0, low_S = 177, low_V = 65;
+	int high_H = H_MAX, high_S = MAX_C_VAL, high_V = MAX_C_VAL;
+
+
+// -----------------------------------------------------Results Logging Function-----------------------------------------
+
 bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
 	if ( status == "PASS" ) {
 		std::ofstream file (filename, std::ios::app);
@@ -31,24 +59,8 @@ bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
 	return false;
 }
 
+//---------------------------------------------Command-Line IP validation-----------------------------------------------
 
-bool isInRange(int r[2], int g[2], int b[2], cv::Vec3b pixColor) {
-	int b_color = pixColor[0];
-	int g_color = pixColor[1];
-	int r_color = pixColor[2];
-	if ( b_color < b[0] || b_color > b[1] ) {
-		std::cout<<"B_Range not met: "<< b_color<<std::endl;
-		return false;
-	} else if ( g_color < g[0] || g_color > g[1] ) {
-		std::cout<<"G_Range not met: "<< g_color<<std::endl;
-		return false;
-	} else if ( r_color < r[0] || r_color > r[1] ) {
-		std::cout<<"R_Range not met: "<< r_color<<std::endl;
-		return false;
-	} else {
-		return true;
-	}
-}
 
 bool parseIP(std::string ip) {
 	if ( ip == "localhost" ) {
@@ -90,8 +102,39 @@ bool parseIP(std::string ip) {
 		}
 	}
 	return true;
-
 }
+
+static void on_low_h_thresh_trackbar(int, void *) {
+	low_H = cv::min(high_H-1, low_H);
+	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
+} 
+
+static void on_high_h_thresh_trackbar(int, void *) {
+	high_H = cv::max(high_H, low_H+1);
+	cv::setTrackbarPos("High H", OBJECTDETECTIONWINDOW, high_H);
+}
+
+static void on_low_s_thresh_trackbar(int, void *) {
+	low_S = cv::min(high_S-1, low_S);
+	cv::setTrackbarPos("Low S", OBJECTDETECTIONWINDOW, low_S);
+}
+
+static void on_high_s_thresh_trackbar(int, void *) {
+	low_H = cv::max(high_S, low_S+1);
+	cv::setTrackbarPos("High S", OBJECTDETECTIONWINDOW, high_S);
+}
+
+static void on_low_v_thresh_trackbar(int, void *) {
+	low_V = cv::min(high_V-1, low_V);
+	cv::setTrackbarPos("Low V", OBJECTDETECTIONWINDOW, low_V);
+}
+
+static void on_high_v_thresh_trackbar(int, void *) {
+	high_V = cv::max(high_V, low_V+1);
+	cv::setTrackbarPos("High V", OBJECTDETECTIONWINDOW, high_V);
+}
+
+// -----------------------------------------Captures and returns frames as they come in-----------------------------------------------------------
 
 cv::Mat GetFrame(cv::VideoCapture *cap) {
 	static cv::Mat frame;
@@ -99,32 +142,20 @@ cv::Mat GetFrame(cv::VideoCapture *cap) {
 	return frame;
 }
 
-cv::Vec3b ModVideo(cv::Mat *frame) {
-	int point_x = frame->rows/4;
-	int point_y = frame->cols/2;
-	static cv::Vec3b new_color(153,102,204);
+// ------------------------------------Draw to Frame/Extracts Color Vector/Converts Color Space to BGR2BGRA----------------------------------------
+
+void ShowVideo(cv::Mat *Frame, cv::Mat *Objframe) {
 	static cv::Mat edges;
-	cv::Vec3b color = frame->at<cv::Vec3b>(cv::Point(point_x, point_y));
-	for(int x=0;x<20;++x) {
-		frame->at<cv::Vec3b>(cv::Point(point_x+x, point_y)) = new_color;
-		for(int y=0;y<20;++y) {
-			frame->at<cv::Vec3b>(cv::Point(point_x, point_y+y)) = new_color;
-		}
-	}
-	cv::cvtColor(*frame, edges, cv::COLOR_BGR2BGRA);
-	cv::imshow("Live Feed", edges);
-	return color;
+	cv::cvtColor(*Frame, edges, cv::COLOR_BGR2BGRA);
+	cv::imshow(LIVEFEEDWINDOW, *Frame);
+	cv::imshow(OBJECTDETECTIONWINDOW, *Objframe);
 }
 
+// -----------------------------------------------------Main Program------------------------------------------
+
 int main(int argc, char *argv[]) {
-	const int CON_FAIL_MAX = 10;
-	int r_range[2] = {130, 255};
-	int g_range[2] = {159, 255};
-	int b_range[2] = {175, 255};
 	const std::string filename = "log.txt";
-	uint8_t consecutive_false = 0;
 	bool colorFound = false;
-	bool suspectedReboot = true;
 	uint32_t hdmiDisplayCount = 0;
 	std::string ip = "";
 	std::string cam_port = "0";
@@ -184,22 +215,68 @@ int main(int argc, char *argv[]) {
 	if (!cap.isOpened()) {
 		return -1;
 	}
-	cvNamedWindow("Live Feed", 1);
+	cvNamedWindow(LIVEFEEDWINDOW.c_str());
+	cvNamedWindow(OBJECTDETECTIONWINDOW.c_str());
+	cv::createTrackbar("Low H", OBJECTDETECTIONWINDOW, &low_H, H_MAX, on_low_h_thresh_trackbar);
+	cv::createTrackbar("High H", OBJECTDETECTIONWINDOW, &high_H, H_MAX, on_high_h_thresh_trackbar);
+	cv::createTrackbar("Low S", OBJECTDETECTIONWINDOW, &low_S, MAX_C_VAL, on_low_s_thresh_trackbar);
+	cv::createTrackbar("High S", OBJECTDETECTIONWINDOW, &high_S, MAX_C_VAL, on_high_s_thresh_trackbar);
+	cv::createTrackbar("Low V", OBJECTDETECTIONWINDOW, &low_V, MAX_C_VAL, on_low_v_thresh_trackbar);
+	cv::createTrackbar("High V", OBJECTDETECTIONWINDOW, &high_V, MAX_C_VAL, on_high_v_thresh_trackbar);
+
 	cv::Mat edges;
 	cv::Mat Frame;
 	std::shared_ptr<ServerReader> sr = std::make_shared<ServerReader>();
 	std::shared_ptr<Signaler> sig = std::make_shared<Signaler>();
 
 	std::thread t(checkpage, http_addr, sr, sig);
+	// Threshold frame
+	cv::Mat Frame_Threshold;
 	while(cv::waitKey(1) != 27) {
 		Frame = GetFrame(&cap);
-		cv::Vec3b color = ModVideo(&Frame);
-		colorFound = isInRange(r_range, g_range, b_range, color);
+		// Convert Frame to HSV Colorspace
+		cv::Mat Frame_HSV;
+		cvtColor(Frame, Frame_HSV, cv::COLOR_BGR2HSV);
+		// Get threshold frame
+		cv::inRange(Frame_HSV, cv::Scalar(low_H, low_S, low_V), cv::Scalar(high_H, high_S, high_V), Frame_Threshold);
+		// Display Original && Obj Frame Frame
+		ShowVideo(&Frame, &Frame_Threshold);
+		// colorFound = isInRange(r_range, g_range, b_range, color);
 		ServerReader* src = sr.get();
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
 			hdmiDisplayCount += 1;
+			ImageData imagedata;
+			int rows = Frame_Threshold.rows;
+			int cols = Frame_Threshold.cols;
+			int x = 1;
+			for ( x; x < rows+1; ++x ) {
+				int y = 1;
+				bool isRed = checkColor(x, y, Frame_Threshold);
+				if ( isRed ) {
+					imagedata.incrementWhite();
+				} else {
+					imagedata.incrementOther();
+				}
+				for ( y; y < cols; ++y ) {
+					isRed = checkColor(x, y, Frame_Threshold);
+					if ( isRed ) {
+						imagedata.incrementWhite();
+					} else {
+						imagedata.incrementOther();
+					}
+				}
+			}
+			std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
+			int dec = imagedata.doGetDec();
+			bool colorFound;
+			if ( dec >= 1 ) colorFound = true;
+			else {
+				colorFound = false;
+				std::cout << "Color is missing or a majority of it is distorted." << std::endl;
+			}
+			std::cout<< "DEC: " << dec << std::endl;		
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
@@ -235,4 +312,40 @@ int main(int argc, char *argv[]) {
 	sig->mu.unlock();
 	t.join();
 	return 0;
+}
+
+bool checkColor(int row, int col, cv::Mat Frame) {
+	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
+	if ( color[0] == 255 ) {
+		return true;
+	}
+	return false;
+}
+
+void ImageData::incrementWhite() {
+	++white;
+}
+
+void ImageData::incrementOther() {
+	++other;
+}
+
+int ImageData::doGetWhite() {
+	return white;
+}
+
+int ImageData::doGetOther() {
+	return other;
+}
+
+int ImageData::doGetDec() {
+	if ( other == 0 && white > 0 ) {
+		std::cout << "All red found." << std::endl;
+		return 1;
+	}
+	return white/other;
+}
+
+ImageData::~ImageData() {
+	std::cout<<"Image Data imploding."<<std::endl;
 }
