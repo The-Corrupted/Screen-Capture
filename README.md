@@ -30,11 +30,9 @@ e.x. ./main --ip 10.0.200.160 --cam 0
 
 ( Notice: This program uses c++17 features. As such, please either alias g++ --std=c++17 or set it manually when you go to compile ).
 
-Once the program starts a live feed should be displayed on your screen with a small purple half-square in the bottom left corner.
+Once the program starts a raw feed of the camera as well as a black and white filtered feed should be displayed to the screen. Yu must make sure the the screen you are attempting to read takes up at least 80 of the cameras view.
 
-Align the purple arrow to one of the corners of the screen and make sure that the edge of the purple arrow does not land on any bright reflections ( These will be picked up by the camera and the color checker will misinterpret it as the screen being on).
-
-Once the camera is setup, insert the autorun into the device and let the program run for as long as you need it to.
+Once the camera is setup, insert the autorun into the test device and let the program run for as long as you need it to.
 
 When you are ready to quit, click ESC.
 
@@ -53,7 +51,7 @@ Your environment should now be clean and ready for retesting.
 ********************* Technical Notes ********************
 
 
-This program starts a capture on the specified camera port and will read the color value from the pixel located at the intersection of the purple half-square (before it is edited of course). The frame will be passed to ModImage where it is displayed on a qtwidget created through opencv.
+This program starts a capture on the specified camera port and will read the color filtered image for black and white values ( red and not red ).
 
 In tandem to this ( in its own seperate thread to prevent blocking ) a curl instance is started using the specified ip and a shared_ptr of type ServerReader.
 
@@ -61,6 +59,6 @@ ServerReader is used to synchronize communications between the main thread and t
 
 On the main thread, ServerReader will trigger an if statement that triggers a color check of the most recent frame capture. Once the check is done, the value of OK_FLAG is set back to false and the main thread will wait until another connection is made.
 
-The color is checked as an rgb value with a fault tolerance of r{130, 255}, g{159,255}, b{175, 255}. This helps to deal with unusual lighting and differences between screens. However it may be necessary to further adjust the tolerance if you find a lot of failures where there shouldn't be any.
+The color is checked as a collection of black and white values ( i.e. the first value is checked for 255 or 0 ). If the number of white/black pixels is >= 1 then it is assumed the screen is on. If it is lower, it is assumed the screen is off or suffering heavy distortion.
 
   
