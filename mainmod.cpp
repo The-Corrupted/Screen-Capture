@@ -6,15 +6,34 @@
 #include <chrono>
 #include <thread>
 #include <memory>
+#include <atomic>
 #include <stdexcept>
 
-// ---------------------------------- Some globals for HSV Color Checker and Windows -----------------------------------------------
+class ImageData {
+private:
+	int white = 0;
+	int other = 0;
+	int mean;
+public:
+	int doGetDec();
+	int doGetWhite();
+	int doGetOther();
+	void incrementWhite();
+	void incrementOther();
+	~ImageData();
+};
+
+bool checkColorXDecrement(int row, int col, int posInc, cv::Mat Frame);
+bool checkColorYDecrement(int row, int col, int posInc, cv::Mat Frame);
+
+// ---------------------------------- Some globals for HSV Colorizer and Adjuster Widget -----------------------------------------------
 
 	std::string LIVEFEEDWINDOW = "Live feed";
 	std::string OBJECTDETECTIONWINDOW = "Objects Detected";
+	// Finding 
 	const int MAX_C_VAL = 255;
 	const int H_MAX = 10;
-	int low_H = 0, low_S = 70, low_V = 50;
+	int low_H = 0, low_S = 177, low_V = 65;
 	int high_H = H_MAX, high_S = MAX_C_VAL, high_V = MAX_C_VAL;
 
 
@@ -90,40 +109,40 @@ bool parseIP(std::string ip) {
 // -------------------------------------- OpenCV Helper Functions----------------------------------------------
 
 bool isInRange(cv::Mat *frame, int low_H, int high_H, int low_S, int high_S, int low_v, int high_v) {
-
+	return false;
 }
 
 // -------------------------------------- Trackbar Functions --------------------------------------------------
 
-// static void on_low_h_thresh_trackbar(int, void *) {
-// 	low_H = cv::min(high_H-1, low_H);
-// 	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
-// } 
+static void on_low_h_thresh_trackbar(int, void *) {
+	low_H = cv::min(high_H-1, low_H);
+	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
+} 
 
-// static void on_high_h_thresh_trackbar(int, void *) {
-// 	high_H = cv::max(high_H, low_H+1);
-// 	cv::setTrackbarPos("High H", OBJECTDETECTIONWINDOW, high_H);
-// }
+static void on_high_h_thresh_trackbar(int, void *) {
+	high_H = cv::max(high_H, low_H+1);
+	cv::setTrackbarPos("High H", OBJECTDETECTIONWINDOW, high_H);
+}
 
-// static void on_low_s_thresh_trackbar(int, void *) {
-// 	low_S = cv::min(high_S-1, low_S);
-// 	cv::setTrackbarPos("Low S", OBJECTDETECTIONWINDOW, low_S);
-// }
+static void on_low_s_thresh_trackbar(int, void *) {
+	low_S = cv::min(high_S-1, low_S);
+	cv::setTrackbarPos("Low S", OBJECTDETECTIONWINDOW, low_S);
+}
 
-// static void on_high_s_thresh_trackbar(int, void *) {
-// 	low_H = cv::max(high_S, low_S+1);
-// 	cv::setTrackbarPos("High S", OBJECTDETECTIONWINDOW, high_S);
-// }
+static void on_high_s_thresh_trackbar(int, void *) {
+	low_H = cv::max(high_S, low_S+1);
+	cv::setTrackbarPos("High S", OBJECTDETECTIONWINDOW, high_S);
+}
 
-// static void on_low_v_thresh_trackbar(int, void *) {
-// 	low_V = cv::min(high_V-1, low_V);
-// 	cv::setTrackbarPos("Low V", OBJECTDETECTIONWINDOW, low_V);
-// }
+static void on_low_v_thresh_trackbar(int, void *) {
+	low_V = cv::min(high_V-1, low_V);
+	cv::setTrackbarPos("Low V", OBJECTDETECTIONWINDOW, low_V);
+}
 
-// static void on_high_v_thresh_trackbar(int, void *) {
-// 	high_V = cv::max(high_V, low_V+1);
-// 	cv::setTrackbarPos("High V", OBJECTDETECTIONWINDOW, high_V);
-// }
+static void on_high_v_thresh_trackbar(int, void *) {
+	high_V = cv::max(high_V, low_V+1);
+	cv::setTrackbarPos("High V", OBJECTDETECTIONWINDOW, high_V);
+}
 
 // -----------------------------------------Captures and returns frames as they come in-----------------------------------------------------------
 
@@ -138,16 +157,16 @@ cv::Mat GetFrame(cv::VideoCapture *cap) {
 /*cv::Vec3b*/ void ModVideo(cv::Mat *Frame, cv::Mat *Objframe) {
 	int point_x = Frame->rows/4;
 	int point_y = Frame->cols/2;
-	//  static cv::Vec3b new_color(153,102,204);
-	// static cv::Mat edges;
-	// cv::Vec3b color = frame->at<cv::Vec3b>(cv::Point(point_x, point_y));
-	// for(int x=0;x<20;++x) {
-	// 	frame->at<cv::Vec3b>(cv::Point(point_x+x, point_y)) = new_color;
-	// 	for(int y=0;y<20;++y) {
-	// 		frame->at<cv::Vec3b>(cv::Point(point_x, point_y+y)) = new_color;
-	// 	}
-	// }
-	// cv::cvtColor(*frame, edges, cv::COLOR_BGR2BGRA);
+	static cv::Vec3b new_color(153,102,204);
+	static cv::Mat edges;
+	cv::Vec3b color = Frame->at<cv::Vec3b>(cv::Point(point_x, point_y));
+	for(int x=0;x<20;++x) {
+		Frame->at<cv::Vec3b>(cv::Point(point_x+x, point_y)) = new_color;
+		for(int y=0;y<20;++y) {
+			Frame->at<cv::Vec3b>(cv::Point(point_x, point_y+y)) = new_color;
+		}
+	}
+	cv::cvtColor(*Frame, edges, cv::COLOR_BGR2BGRA);
 	cv::imshow(LIVEFEEDWINDOW, *Frame);
 	cv::imshow(OBJECTDETECTIONWINDOW, *Objframe);
 	// return color;
@@ -219,12 +238,12 @@ int main(int argc, char *argv[]) {
 	}
 	cvNamedWindow(LIVEFEEDWINDOW.c_str());
 	cvNamedWindow(OBJECTDETECTIONWINDOW.c_str());
-	// cv::createTrackbar("Low H", OBJECTDETECTIONWINDOW, &low_H, H_MAX, on_low_h_thresh_trackbar);
-	// cv::createTrackbar("High H", OBJECTDETECTIONWINDOW, &high_H, H_MAX, on_high_h_thresh_trackbar);
-	// cv::createTrackbar("Low S", OBJECTDETECTIONWINDOW, &low_S, MAX_C_VAL, on_low_s_thresh_trackbar);
-	// cv::createTrackbar("High S", OBJECTDETECTIONWINDOW, &high_S, MAX_C_VAL, on_high_s_thresh_trackbar);
-	// cv::createTrackbar("Low V", OBJECTDETECTIONWINDOW, &low_V, MAX_C_VAL, on_low_v_thresh_trackbar);
-	// cv::createTrackbar("High V", OBJECTDETECTIONWINDOW, &high_V, MAX_C_VAL, on_high_v_thresh_trackbar);
+	cv::createTrackbar("Low H", OBJECTDETECTIONWINDOW, &low_H, H_MAX, on_low_h_thresh_trackbar);
+	cv::createTrackbar("High H", OBJECTDETECTIONWINDOW, &high_H, H_MAX, on_high_h_thresh_trackbar);
+	cv::createTrackbar("Low S", OBJECTDETECTIONWINDOW, &low_S, MAX_C_VAL, on_low_s_thresh_trackbar);
+	cv::createTrackbar("High S", OBJECTDETECTIONWINDOW, &high_S, MAX_C_VAL, on_high_s_thresh_trackbar);
+	cv::createTrackbar("Low V", OBJECTDETECTIONWINDOW, &low_V, MAX_C_VAL, on_low_v_thresh_trackbar);
+	cv::createTrackbar("High V", OBJECTDETECTIONWINDOW, &high_V, MAX_C_VAL, on_high_v_thresh_trackbar);
 
 	cv::Mat edges;
 	cv::Mat Frame;
@@ -245,10 +264,30 @@ int main(int argc, char *argv[]) {
 		ModVideo(&Frame, &Frame_Threshold);
 		// colorFound = isInRange(r_range, g_range, b_range, color);
 		ServerReader* src = sr.get();
+		ImageData imagedata;
+		int rows = Frame_Threshold.rows;
+		int cols = Frame_Threshold.cols;
+		// ------------------------- Start Threaded Image Read ----------------------------
+		std::cout<<imagedata.doGetWhite()<< " " << imagedata.doGetOther();
+		// ------------------------ End Threaded Image Read -------------------------------
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
 			hdmiDisplayCount += 1;
+			for ( int x = rows; x > 0; --x ) {
+				for ( int x = rows; x > 0; --x ) {
+					bool isRed = checkColorXDecrement(rows, cols, x, Frame_Threshold);
+					if ( isRed ) imagedata.incrementWhite();
+					else imagedata.incrementOther();
+					for ( int y = cols; y > 0; --y ) {
+						isRed = checkColorYDecrement(rows, cols, y, Frame_Threshold);
+						if ( isRed ) imagedata.incrementWhite();
+						else imagedata.incrementOther();
+					}
+				}
+			}
+			int mean = imagedata.doGetMean();
+			if mean
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
@@ -284,4 +323,46 @@ int main(int argc, char *argv[]) {
 	sig->mu.unlock();
 	t.join();
 	return 0;
+}
+
+bool checkColorXDecrement(int row, int col, int posInc, cv::Mat Frame) {
+	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row+posInc, col));
+	int colorCode = color[0] * 3;
+	if ( colorCode == 765 ) {
+		return true;
+	}
+	return false;
+}
+
+bool checkColorYDecrement(int row, int col, int posInc, cv::Mat Frame) {
+	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col+posInc));
+	int colorCode = color[0] * 3;
+	if ( colorCode == 765 ) {
+		return true;
+	}
+	return false;
+}
+
+void ImageData::incrementWhite() {
+	++white;
+}
+
+void ImageData::incrementOther() {
+	++other;
+}
+
+int ImageData::doGetWhite() {
+	return white;
+}
+
+int ImageData::doGetOther() {
+	return other;
+}
+
+int ImageData::doGetDec() {
+	return white/(other+white);
+}
+
+ImageData::~ImageData() {
+	std::cout<<"Image Data imploding."<<std::endl;
 }
