@@ -294,8 +294,13 @@ int main(int argc, char *argv[]) {
 			}
 			std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
 			int dec = imagedata.doGetDec();
-			std::cout<< "DEC: " << dec << std::endl;
-			std::cout<<"DEC: " << dec << std::endl;			
+			bool colorFound;
+			if ( dec >= 1 ) colorFound = true;
+			else {
+				colorFound = false;
+				std::cout << "Color is missing or a majority of it is distorted." << std::endl;
+			}
+			std::cout<< "DEC: " << dec << std::endl;		
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
@@ -370,7 +375,11 @@ int ImageData::doGetOther() {
 }
 
 int ImageData::doGetDec() {
-	return white/(other+white);
+	if ( other == 0 && white > 0 ) {
+		std::cout << "All red found." << std::endl;
+		return 1;
+	}
+	return white/other;
 }
 
 ImageData::~ImageData() {
