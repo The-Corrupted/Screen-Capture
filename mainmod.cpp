@@ -6,7 +6,6 @@
 #include <chrono>
 #include <thread>
 #include <memory>
-#include <atomic>
 #include <stdexcept>
 
 class ImageData {
