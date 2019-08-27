@@ -316,8 +316,7 @@ int main(int argc, char *argv[]) {
 
 bool checkColor(int row, int col, cv::Mat Frame) {
 	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
-	int colorCode = color[0] * 3;
-	if ( colorCode == 765 ) {
+	if ( color[0] == 255 ) {
 		return true;
 	}
 	return false;
