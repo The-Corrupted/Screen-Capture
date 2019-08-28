@@ -55,6 +55,7 @@ void checkpage(std::string http_addr, std::shared_ptr<ServerReader> sr, std::sha
 			continue;
 		} else {
 			ServerReader* src = sr.get();
+			std::this_thread::sleep_for(std::chrono::seconds(2));
 			src->mu.lock();
 			src->OK_FLAG = true;
 			if ( readBuffer == "true" ) {
