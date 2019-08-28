@@ -13,7 +13,7 @@ private:
 	int white = 0;
 	int other = 0;
 public:
-	int doGetDec();
+	float doGetRes();
 	int doGetWhite();
 	int doGetOther();
 	void incrementWhite();
@@ -136,6 +136,29 @@ int main(int argc, char *argv[]) {
 		// Display Original && Obj Frame
 		ShowVideo(&Frame, &Frame_Threshold);
 		ServerReader* src = sr.get();
+		ImageData imagedata;
+		int rows = Frame_Threshold.rows;
+		int cols = Frame_Threshold.cols;
+		int x = 1;
+		for ( x; x < rows+1; ++x ) {
+			int y = 1;
+			bool isRed = checkColor(x, y, Frame_Threshold);
+			if ( isRed ) {
+				imagedata.incrementWhite();
+			} else {
+				imagedata.incrementOther();
+			}
+			for ( y; y < cols; ++y ) {
+				isRed = checkColor(x, y, Frame_Threshold);
+				if ( isRed ) {
+					imagedata.incrementWhite();
+				} else {
+					imagedata.incrementOther();
+				}
+			}
+		}
+		std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
+		int dec = imagedata.doGetRes();
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
@@ -162,14 +185,14 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
-			int dec = imagedata.doGetDec();
+			float res = imagedata.doGetRes();
 			bool colorFound;
-			if ( dec >= 1 ) colorFound = true;
+			if ( dec >= 0.8 ) colorFound = true;
 			else {
 				colorFound = false;
 				std::cout << "Color is missing or a majority of it is distorted." << std::endl;
 			}
-			std::cout<< "DEC: " << dec << std::endl;		
+			std::cout<< "DEC: " << dec << std::endl;
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
@@ -318,12 +341,12 @@ int ImageData::doGetOther() {
 	return other;
 }
 
-int ImageData::doGetDec() {
+float ImageData::doGetRes() {
 	if ( other == 0 && white > 0 ) {
 		std::cout << "All red found." << std::endl;
 		return 1;
 	}
-	return white/other;
+	return (float)(white)/(float)(other);
 }
 
 ImageData::~ImageData() {
