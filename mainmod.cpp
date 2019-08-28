@@ -22,134 +22,28 @@ public:
 };
 
 bool checkColor(int row, int col, cv::Mat Frame);
+bool writeFile(std::string status, std::string filename, int hdmiDisplayCount);
+bool parseIP(std::string ip);
+cv::Mat GetFrame(cv::VideoCapture *cap);
+void ShowVideo(cv::Mat *Frame, cv::Mat *Objframe);
+
+static void on_low_h_thresh_trackbar(int, void *);
+static void on_high_h_thresh_trackbar(int, void *);
+static void on_low_s_thresh_trackbar(int, void *);
+static void on_high_s_thresh_trackbar(int, void *);
+static void on_low_v_thresh_trackbar(int, void *);
+static void on_high_v_thresh_trackbar(int, void *);
+
 
 // ---------------------------------- Some globals for HSV Colorizer and Adjuster Widget -----------------------------------------------
 
-	std::string LIVEFEEDWINDOW = "Live feed";
-	std::string OBJECTDETECTIONWINDOW = "Objects Detected";
-	// Finding 
-	const int MAX_C_VAL = 255;
-	const int H_MAX = 10;
-	int low_H = 0, low_S = 177, low_V = 65;
-	int high_H = H_MAX, high_S = MAX_C_VAL, high_V = MAX_C_VAL;
+std::string LIVEFEEDWINDOW = "Live feed";
+std::string OBJECTDETECTIONWINDOW = "Objects Detected";
+const int MAX_C_VAL = 255;
+const int H_MAX = 10;
+int low_H = 0, low_S = 177, low_V = 65;
+int high_H = H_MAX, high_S = MAX_C_VAL, high_V = MAX_C_VAL;
 
-
-// -----------------------------------------------------Results Logging Function-----------------------------------------
-
-bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
-	if ( status == "PASS" ) {
-		std::ofstream file (filename, std::ios::app);
-		file << "*************** HDMI Display Detected. ***************\n\n";
-		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
-		file.close();
-		return true;
-	} else if ( status == "FAIL" ) {
-		std::ofstream file(filename, std::ios::app);
-		file << "*************** FAIL: HDMI Did Not Display ****************\n\n";
-		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
-		file.close();
-		return true;
-	} else {
-		std::ofstream file(filename, std::ios::app);
-		file << "***************  MISCFAIL: Nothing worked  ****************\n\n";
-		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
-		return true;
-	}
-	std::cout<<"Something went wrong."<<std::endl;
-	return false;
-}
-
-//---------------------------------------------Command-Line IP validation-----------------------------------------------
-
-
-bool parseIP(std::string ip) {
-	if ( ip == "localhost" ) {
-		return true;
-	}
-	std::vector<std::string> sectioning; 
-	std::string buff;
-	//Break apart the string
-	for (int x=0;x<ip.length();++x) {
-		if ( ip[x] == '.' ) {
-			if ( buff.length() == 0 ) {
-				std::cout<<"Invalid IPv4. Seperator found before integer"<<std::endl;
-				return false;
-			}
-			sectioning.push_back(buff);
-			buff.clear();
-			continue;
-		}
-		buff += ip[x];
-	}
-	if ( buff.length() < 1 ) {
-		std::cout<<"Invalid IPv4: Ended with a period"<<std::endl;
-		return false;
-	}
-	sectioning.push_back(buff);
-	buff.clear();
-	if ( sectioning.size() != 4 ) {
-		std::cout<<"Invalid IPv4 sections. Wanted 4, got: "<<sectioning.size()<<std::endl;
-		return false;
-	}
-	for(int x=0; x<sectioning.size(); ++x) {
-		std::string sec = sectioning[x];
-		for(int y=0; y<sec.length();++y) {
-			if ( sec[y] - '0' > 9 || sec[y] - '0' < 0 ) {
-				std::cout<<"Invalid character found in IPv4 address"<<std::endl;
-				std::cout<<"Invalid character: "<<sec[y]<<std::endl;
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-static void on_low_h_thresh_trackbar(int, void *) {
-	low_H = cv::min(high_H-1, low_H);
-	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
-} 
-
-static void on_high_h_thresh_trackbar(int, void *) {
-	high_H = cv::max(high_H, low_H+1);
-	cv::setTrackbarPos("High H", OBJECTDETECTIONWINDOW, high_H);
-}
-
-static void on_low_s_thresh_trackbar(int, void *) {
-	low_S = cv::min(high_S-1, low_S);
-	cv::setTrackbarPos("Low S", OBJECTDETECTIONWINDOW, low_S);
-}
-
-static void on_high_s_thresh_trackbar(int, void *) {
-	low_H = cv::max(high_S, low_S+1);
-	cv::setTrackbarPos("High S", OBJECTDETECTIONWINDOW, high_S);
-}
-
-static void on_low_v_thresh_trackbar(int, void *) {
-	low_V = cv::min(high_V-1, low_V);
-	cv::setTrackbarPos("Low V", OBJECTDETECTIONWINDOW, low_V);
-}
-
-static void on_high_v_thresh_trackbar(int, void *) {
-	high_V = cv::max(high_V, low_V+1);
-	cv::setTrackbarPos("High V", OBJECTDETECTIONWINDOW, high_V);
-}
-
-// -----------------------------------------Captures and returns frames as they come in-----------------------------------------------------------
-
-cv::Mat GetFrame(cv::VideoCapture *cap) {
-	static cv::Mat frame;
-	*cap >> frame;
-	return frame;
-}
-
-// ------------------------------------Draw to Frame/Extracts Color Vector/Converts Color Space to BGR2BGRA----------------------------------------
-
-void ShowVideo(cv::Mat *Frame, cv::Mat *Objframe) {
-	static cv::Mat edges;
-	cv::cvtColor(*Frame, edges, cv::COLOR_BGR2BGRA);
-	cv::imshow(LIVEFEEDWINDOW, *Frame);
-	cv::imshow(OBJECTDETECTIONWINDOW, *Objframe);
-}
 
 // -----------------------------------------------------Main Program------------------------------------------
 
@@ -239,9 +133,8 @@ int main(int argc, char *argv[]) {
 		cvtColor(Frame, Frame_HSV, cv::COLOR_BGR2HSV);
 		// Get threshold frame
 		cv::inRange(Frame_HSV, cv::Scalar(low_H, low_S, low_V), cv::Scalar(high_H, high_S, high_V), Frame_Threshold);
-		// Display Original && Obj Frame Frame
+		// Display Original && Obj Frame
 		ShowVideo(&Frame, &Frame_Threshold);
-		// colorFound = isInRange(r_range, g_range, b_range, color);
 		ServerReader* src = sr.get();
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
@@ -314,6 +207,93 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
+// -----------------------------------------------------Results Logging Function-----------------------------------------
+
+bool writeFile(std::string status, std::string filename, int hdmiDisplayCount) {
+	if ( status == "PASS" ) {
+		std::ofstream file (filename, std::ios::app);
+		file << "*************** HDMI Display Detected. ***************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		file.close();
+		return true;
+	} else if ( status == "FAIL" ) {
+		std::ofstream file(filename, std::ios::app);
+		file << "*************** FAIL: HDMI Did Not Display ****************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		file.close();
+		return true;
+	} else {
+		std::ofstream file(filename, std::ios::app);
+		file << "***************  MISCFAIL: Nothing worked  ****************\n\n";
+		file << "***************       Iter "<<hdmiDisplayCount<<"            **********\n\n";
+		return true;
+	}
+	std::cout<<"Something went wrong."<<std::endl;
+	return false;
+}
+
+//---------------------------------------------Command-Line IP validation-----------------------------------------------
+
+
+bool parseIP(std::string ip) {
+	if ( ip == "localhost" ) {
+		return true;
+	}
+	std::vector<std::string> sectioning; 
+	std::string buff;
+	//Break apart the string
+	for (int x=0;x<ip.length();++x) {
+		if ( ip[x] == '.' ) {
+			if ( buff.length() == 0 ) {
+				std::cout<<"Invalid IPv4. Seperator found before integer"<<std::endl;
+				return false;
+			}
+			sectioning.push_back(buff);
+			buff.clear();
+			continue;
+		}
+		buff += ip[x];
+	}
+	if ( buff.length() < 1 ) {
+		std::cout<<"Invalid IPv4: Ended with a period"<<std::endl;
+		return false;
+	}
+	sectioning.push_back(buff);
+	buff.clear();
+	if ( sectioning.size() != 4 ) {
+		std::cout<<"Invalid IPv4 sections. Wanted 4, got: "<<sectioning.size()<<std::endl;
+		return false;
+	}
+	for(int x=0; x<sectioning.size(); ++x) {
+		std::string sec = sectioning[x];
+		for(int y=0; y<sec.length();++y) {
+			if ( sec[y] - '0' > 9 || sec[y] - '0' < 0 ) {
+				std::cout<<"Invalid character found in IPv4 address"<<std::endl;
+				std::cout<<"Invalid character: "<<sec[y]<<std::endl;
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+// -----------------------------------------Captures and returns frames as they come in-----------------------------------------------------------
+
+cv::Mat GetFrame(cv::VideoCapture *cap) {
+	static cv::Mat frame;
+	*cap >> frame;
+	return frame;
+}
+
+// ------------------------------------ Create The Display widget and show frames ------------------------------------------------------------
+
+void ShowVideo(cv::Mat *Frame, cv::Mat *Objframe) {
+	static cv::Mat edges;
+	cv::cvtColor(*Frame, edges, cv::COLOR_BGR2BGRA);
+	cv::imshow(LIVEFEEDWINDOW, *Frame);
+	cv::imshow(OBJECTDETECTIONWINDOW, *Objframe);
+}
+
 bool checkColor(int row, int col, cv::Mat Frame) {
 	cv::Vec3b color = Frame.at<cv::Vec3b>(cv::Point(row, col));
 	if ( color[0] == 255 ) {
@@ -348,4 +328,35 @@ int ImageData::doGetDec() {
 
 ImageData::~ImageData() {
 	std::cout<<"Image Data imploding."<<std::endl;
+}
+
+// ----------------------------------------- Color Adjuster Functions ------------------------------------
+static void on_low_h_thresh_trackbar(int, void *) {
+	low_H = cv::min(high_H-1, low_H);
+	cv::setTrackbarPos("Low H", OBJECTDETECTIONWINDOW, low_H);
+} 
+
+static void on_high_h_thresh_trackbar(int, void *) {
+	high_H = cv::max(high_H, low_H+1);
+	cv::setTrackbarPos("High H", OBJECTDETECTIONWINDOW, high_H);
+}
+
+static void on_low_s_thresh_trackbar(int, void *) {
+	low_S = cv::min(high_S-1, low_S);
+	cv::setTrackbarPos("Low S", OBJECTDETECTIONWINDOW, low_S);
+}
+
+static void on_high_s_thresh_trackbar(int, void *) {
+	low_H = cv::max(high_S, low_S+1);
+	cv::setTrackbarPos("High S", OBJECTDETECTIONWINDOW, high_S);
+}
+
+static void on_low_v_thresh_trackbar(int, void *) {
+	low_V = cv::min(high_V-1, low_V);
+	cv::setTrackbarPos("Low V", OBJECTDETECTIONWINDOW, low_V);
+}
+
+static void on_high_v_thresh_trackbar(int, void *) {
+	high_V = cv::max(high_V, low_V+1);
+	cv::setTrackbarPos("High V", OBJECTDETECTIONWINDOW, high_V);
 }
