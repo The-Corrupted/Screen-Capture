@@ -136,29 +136,6 @@ int main(int argc, char *argv[]) {
 		// Display Original && Obj Frame
 		ShowVideo(&Frame, &Frame_Threshold);
 		ServerReader* src = sr.get();
-		ImageData imagedata;
-		int rows = Frame_Threshold.rows;
-		int cols = Frame_Threshold.cols;
-		int x = 1;
-		for ( x; x < rows+1; ++x ) {
-			int y = 1;
-			bool isRed = checkColor(x, y, Frame_Threshold);
-			if ( isRed ) {
-				imagedata.incrementWhite();
-			} else {
-				imagedata.incrementOther();
-			}
-			for ( y; y < cols; ++y ) {
-				isRed = checkColor(x, y, Frame_Threshold);
-				if ( isRed ) {
-					imagedata.incrementWhite();
-				} else {
-					imagedata.incrementOther();
-				}
-			}
-		}
-		std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
-		int dec = imagedata.doGetRes();
 		if ( src->OK_FLAG ) { 
 			src->mu.lock();
 			src->OK_FLAG = false;
@@ -184,15 +161,15 @@ int main(int argc, char *argv[]) {
 					}
 				}
 			}
-			std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
+			// std::cout<<imagedata.doGetWhite() << " " << imagedata.doGetOther() << std::endl;
 			float res = imagedata.doGetRes();
 			bool colorFound;
-			if ( dec >= 0.8 ) colorFound = true;
+			if ( res >= 0.8 ) colorFound = true;
 			else {
 				colorFound = false;
 				std::cout << "Color is missing or a majority of it is distorted." << std::endl;
 			}
-			std::cout<< "DEC: " << dec << std::endl;
+			// std::cout<< "DEC: " << dec << std::endl;
 			if (colorFound && src->edid_found) {
 				std::cout<<"Color is in range." << std::endl;
 				writeFile("PASS", filename, hdmiDisplayCount);
