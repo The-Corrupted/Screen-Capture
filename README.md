@@ -29,7 +29,7 @@ e.x. ./main --ip 10.0.200.160 --cam 0
 
 ( Notice: This program uses c++17 features. As such, please either alias g++ --std=c++17 or set it manually when you go to compile ).
 
-Once the program starts a raw feed of the camera as well as a black and white filtered feed should be displayed to the screen. Yu must make sure the the screen you are attempting to read takes up at least 80 of the cameras view.
+Once the program starts a raw feed of the camera as well as a black and white filtered feed should be displayed to the screen. You must make sure the the screen you are attempting to read takes up at least 80 of the cameras view.
 
 Once the camera is setup, insert the autorun into the test device and let the program run for as long as you need it to.
 
